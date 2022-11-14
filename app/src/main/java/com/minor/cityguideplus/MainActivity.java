@@ -6,13 +6,16 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
+import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -24,6 +27,7 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -31,14 +35,17 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
     RelativeLayout Library, Restaurant, Gym, Doctor, Cinema, Cafe;
-    Loading l;
+    static Loading l;
     FusedLocationProviderClient fusedLocationProviderClient;
-    static final int req_code = 101;
+    static final int req_code = 101, RESULT_SPEECH = 1;
     double lat, lng;
+
+    ImageView voice_btn;
 
     private void getCurrentLocation(){
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED){
@@ -62,9 +69,8 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 for(Location location: locationResult.getLocations()){
-                    if(location != null){
-                        Toast.makeText(getApplicationContext(),"lat:"+location.getLatitude()+" log:"+location.getLongitude(), Toast.LENGTH_SHORT).show();
-                    }
+                        lat = location.getLatitude();
+                        lng = location.getLongitude();
                 }
 
             }
@@ -95,9 +101,26 @@ public class MainActivity extends AppCompatActivity {
         l = new Loading(this);
         l.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
 
+        voice_btn = (ImageView)findViewById(R.id.voice_search_btn);
 
+        voice_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,"en-US");
+
+                try{
+                    startActivityForResult(i,RESULT_SPEECH);
+                }catch (ActivityNotFoundException e){
+                    Toast.makeText(getApplicationContext(), "Speech Error", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getApplicationContext());
         getCurrentLocation();
+
+
 
 
 
@@ -114,23 +137,18 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 l.show();
 
-
-
                 StringBuilder stringBuilder = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
                 stringBuilder.append("location="+lat+","+lng);
-                stringBuilder.append("&radius=1000");
-                stringBuilder.append("&type=atm");
+                stringBuilder.append("&radius=10000");
+                stringBuilder.append("&type=library");
                 stringBuilder.append("&sensor=true");
+                stringBuilder.append("&keyword=library");
                 stringBuilder.append("&key="+getResources().getString(R.string.places_key));
 
                 String url = stringBuilder.toString();
 
-                FetchData fetchData = new FetchData(MainActivity.this);
+                FetchData fetchData = new FetchData(MainActivity.this, "Librabry");
                 fetchData.execute(url);
-
-
-                l.dismiss();
-
 
             }
         });
@@ -139,15 +157,18 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 l.show();
 
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        l.dismiss();
-                        Intent i = new Intent(MainActivity.this, PlaceViewer.class);
-                        i.putExtra("type","Restaurant");
-                        startActivity(i);
-                    }
-                },2500);
+                StringBuilder stringBuilder = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
+                stringBuilder.append("location="+lat+","+lng);
+                stringBuilder.append("&radius=10000");
+                stringBuilder.append("&type=restaurant");
+                stringBuilder.append("&sensor=true");
+                stringBuilder.append("&keyword=restaurant");
+                stringBuilder.append("&key="+getResources().getString(R.string.places_key));
+
+                String url = stringBuilder.toString();
+
+                FetchData fetchData = new FetchData(MainActivity.this, "Restaurant");
+                fetchData.execute(url);
 
             }
         });
@@ -156,15 +177,18 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 l.show();
 
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        l.dismiss();
-                        Intent i = new Intent(MainActivity.this, PlaceViewer.class);
-                        i.putExtra("type","Gym");
-                        startActivity(i);
-                    }
-                },2500);
+                StringBuilder stringBuilder = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
+                stringBuilder.append("location="+lat+","+lng);
+                stringBuilder.append("&radius=10000");
+                stringBuilder.append("&type=gym");
+                stringBuilder.append("&sensor=true");
+                stringBuilder.append("&keyword=gym");
+                stringBuilder.append("&key="+getResources().getString(R.string.places_key));
+
+                String url = stringBuilder.toString();
+
+                FetchData fetchData = new FetchData(MainActivity.this,"Gym");
+                fetchData.execute(url);
 
             }
         });
@@ -173,15 +197,18 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 l.show();
 
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        l.dismiss();
-                        Intent i = new Intent(MainActivity.this, PlaceViewer.class);
-                        i.putExtra("type","Doctor");
-                        startActivity(i);
-                    }
-                },2500);
+                StringBuilder stringBuilder = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
+                stringBuilder.append("location="+lat+","+lng);
+                stringBuilder.append("&radius=10000");
+                stringBuilder.append("&type=doctor");
+                stringBuilder.append("&sensor=true");
+                stringBuilder.append("&keyword=doctor");
+                stringBuilder.append("&key="+getResources().getString(R.string.places_key));
+
+                String url = stringBuilder.toString();
+
+                FetchData fetchData = new FetchData(MainActivity.this,"Doctor");
+                fetchData.execute(url);
 
             }
         });
@@ -190,15 +217,18 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 l.show();
 
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        l.dismiss();
-                        Intent i = new Intent(MainActivity.this, PlaceViewer.class);
-                        i.putExtra("type","Cinema");
-                        startActivity(i);
-                    }
-                },2500);
+                StringBuilder stringBuilder = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
+                stringBuilder.append("location="+lat+","+lng);
+                stringBuilder.append("&radius=10000");
+                stringBuilder.append("&type=cinema");
+                stringBuilder.append("&sensor=true");
+                stringBuilder.append("&keyword=cinema");
+                stringBuilder.append("&key="+getResources().getString(R.string.places_key));
+
+                String url = stringBuilder.toString();
+
+                FetchData fetchData = new FetchData(MainActivity.this,"Cinema");
+                fetchData.execute(url);
 
             }
         });
@@ -207,15 +237,18 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 l.show();
 
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        l.dismiss();
-                        Intent i = new Intent(MainActivity.this, PlaceViewer.class);
-                        i.putExtra("type","Cafe");
-                        startActivity(i);
-                    }
-                },2500);
+                StringBuilder stringBuilder = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
+                stringBuilder.append("location="+lat+","+lng);
+                stringBuilder.append("&radius=10000");
+                stringBuilder.append("&type=cafe");
+                stringBuilder.append("&sensor=true");
+                stringBuilder.append("&keyword=cafe");
+                stringBuilder.append("&key="+getResources().getString(R.string.places_key));
+
+                String url = stringBuilder.toString();
+
+                FetchData fetchData = new FetchData(MainActivity.this, "Cafe");
+                fetchData.execute(url);
 
             }
         });
@@ -233,6 +266,31 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode){
+            case RESULT_SPEECH:
+                if(resultCode == RESULT_OK && data != null){
+                    ArrayList<String> text = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
 
+                    l.show();
 
+                    StringBuilder stringBuilder = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
+                    stringBuilder.append("location="+lat+","+lng);
+                    stringBuilder.append("&radius=50000");
+                    stringBuilder.append("&type="+text.get(0).toLowerCase().trim());
+                    stringBuilder.append("&sensor=true");
+                    stringBuilder.append("&keyword="+text.get(0).toLowerCase().trim());
+                    stringBuilder.append("&key="+getResources().getString(R.string.places_key));
+
+                    String url = stringBuilder.toString();
+
+                    FetchData fetchData = new FetchData(MainActivity.this,text.get(0));
+                    fetchData.execute(url);
+                }
+                break;
+
+        }
+    }
 }
